@@ -116,6 +116,10 @@ func pushMessageHelper(c *gin.Context, message *model.Message) {
 			return
 		}
 	}
+	processMessage(c, message, &user)
+}
+
+func processMessage(c *gin.Context, message *model.Message, user *model.User) {
 	if message.Title == "" {
 		message.Title = common.SystemName
 	}
@@ -133,7 +137,7 @@ func pushMessageHelper(c *gin.Context, message *model.Message) {
 		})
 		return
 	}
-	err = saveAndSendMessage(&user, message, channel_)
+	err = saveAndSendMessage(user, message, channel_)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
@@ -181,11 +185,13 @@ func saveAndSendMessage(user *model.User, message *model.Message, channel_ *mode
 		if err != nil {
 			return err
 		}
+		go syncMessageToUser(message, user.Id)
 	} else {
 		if message.Async {
 			return errors.New("异步发送消息需要用户具备消息持久化的权限")
 		}
 		message.Link = "unsaved" // This is for user to identify whether the message is saved
+		go syncMessageToUser(message, user.Id)
 	}
 	if !message.Async {
 		err := channel.SendMessage(message, user, channel_)

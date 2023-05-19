@@ -8,8 +8,8 @@ const OtherSetting = () => {
     Footer: '',
     Notice: '',
     About: '',
+    HomePageLink: '',
   });
-  let originInputs = {};
   let [loading, setLoading] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateData, setUpdateData] = useState({
@@ -18,7 +18,7 @@ const OtherSetting = () => {
   });
 
   const getOptions = async () => {
-    const res = await API.get('/api/option');
+    const res = await API.get('/api/option/');
     const { success, message, data } = res.data;
     if (success) {
       let newInputs = {};
@@ -28,7 +28,6 @@ const OtherSetting = () => {
         }
       });
       setInputs(newInputs);
-      originInputs = newInputs;
     } else {
       showError(message);
     }
@@ -40,7 +39,7 @@ const OtherSetting = () => {
 
   const updateOption = async (key, value) => {
     setLoading(true);
-    const res = await API.put('/api/option', {
+    const res = await API.put('/api/option/', {
       key,
       value,
     });
@@ -63,6 +62,10 @@ const OtherSetting = () => {
 
   const submitFooter = async () => {
     await updateOption('Footer', inputs.Footer);
+  };
+
+  const submitHomePageLink = async () => {
+    await updateOption('HomePageLink', inputs.HomePageLink);
   };
 
   const submitAbout = async () => {
@@ -109,6 +112,17 @@ const OtherSetting = () => {
           <Form.Button onClick={submitNotice}>保存公告</Form.Button>
           <Divider />
           <Header as='h3'>个性化设置</Header>
+          <Form.Group widths='equal'>
+            <Form.Input
+              label='首页链接'
+              placeholder='在此输入首页链接，设置后将通过 iframe 方式嵌入该网页'
+              value={inputs.HomePageLink}
+              name='HomePageLink'
+              onChange={handleInputChange}
+              type='url'
+            />
+          </Form.Group>
+          <Form.Button onClick={submitHomePageLink}>设置首页链接</Form.Button>
           <Form.Group widths='equal'>
             <Form.TextArea
               label='关于'

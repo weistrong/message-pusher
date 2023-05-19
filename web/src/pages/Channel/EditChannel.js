@@ -209,6 +209,58 @@ const EditChannel = () => {
             </Form.Group>
           </>
         );
+      case 'tencent_alarm':
+        return (
+          <>
+            <Message>
+              通过腾讯云自定义消息告警进行推送，
+              <a
+                target='_blank'
+                href='https://github.com/songquanpeng/message-pusher/issues/87#issuecomment-1547971847'
+              >
+                配置教程
+              </a>
+              。
+            </Message>
+            <Form.Group widths={3}>
+              <Form.Input
+                label='SecretId'
+                name='app_id'
+                onChange={handleInputChange}
+                autoComplete='new-password'
+                value={inputs.app_id}
+                placeholder='子账号的 SecretId'
+              />
+              <Form.Input
+                label='SecretKey'
+                name='secret'
+                type='password'
+                onChange={handleInputChange}
+                autoComplete='new-password'
+                value={inputs.secret}
+                placeholder='子账号的 SecretKey'
+              />
+              <Form.Input
+                label='消息策略 ID'
+                name='account_id'
+                onChange={handleInputChange}
+                autoComplete='new-password'
+                value={inputs.account_id}
+                placeholder='例如：cm-6gl3pq19'
+              />
+            </Form.Group>
+            <Form.Group widths={3}>
+              <Form.Input
+                label='区域'
+                name='other'
+                onChange={handleInputChange}
+                autoComplete='new-password'
+                value={inputs.other}
+                placeholder='例如：ap-shanghai'
+              />
+            </Form.Group>
+          </>
+        );
       case 'corp_app':
         return (
           <>
@@ -497,6 +549,8 @@ const EditChannel = () => {
                 cqhttp
               </a>{' '}
               等实现。 利用 OneBot 协议可以实现推送 QQ 消息。
+              <br/>
+              注意，如果推送目标是群号则前面必须加上群号前缀，例如 group_123456789。
             </Message>
             <Form.Group widths={3}>
               <Form.Input
@@ -522,7 +576,7 @@ const EditChannel = () => {
                 onChange={handleInputChange}
                 autoComplete='new-password'
                 value={inputs.account_id}
-                placeholder='在此填写默认推送目标，例如 QQ 号，如果是群号则前面必须加上群号前缀，例如 group_123456789'
+                placeholder='在此填写默认推送目标，例如 QQ 号'
               />
             </Form.Group>
           </>

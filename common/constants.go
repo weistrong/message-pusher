@@ -11,6 +11,7 @@ var Version = "v0.0.0"
 var SystemName = "消息推送服务"
 var ServerAddress = "http://localhost:3000"
 var Footer = ""
+var HomePageLink = ""
 var MessageCount = 0 // Non critical value, no need to use atomic
 var UserCount = 0    // Non critical value, no need to use atomic
 
@@ -112,4 +113,10 @@ const (
 	ChannelStatusUnknown  = 0
 	ChannelStatusEnabled  = 1
 	ChannelStatusDisabled = 2
+)
+
+const (
+	WebhookStatusUnknown  = 0
+	WebhookStatusEnabled  = 1
+	WebhookStatusDisabled = 2
 )

@@ -40,9 +40,9 @@ _✨ 搭建专属于你的消息推送服务，支持多种消息推送方式，
   <a href="https://message-pusher.onrender.com/">在线演示</a>
 </p>
 
-> 公告：官方部署站 https://msgpusher.com 现已上线，当前开放注册，欢迎使用。如果收到积极反馈未来可以考虑换用延迟更低的服务器。
+> **Note**：官方部署站 https://msgpusher.com 现已上线，当前开放注册，欢迎使用。如果收到积极反馈未来可以考虑换用延迟更低的服务器。
 
-> 注意：从 `v0.3` 版本升级到 `v0.4` 版本需要手动迁移数据库，具体方法见 [迁移数据库](#迁移数据库)。
+> **Warning**：从 `v0.3` 版本升级到 `v0.4` 版本需要手动迁移数据库，具体方法见[迁移数据库](#迁移数据库)。
 
 ## 描述
 1. 多种消息推送方式：
@@ -58,19 +58,21 @@ _✨ 搭建专属于你的消息推送服务，支持多种消息推送方式，
    + WebSocket 客户端（[官方客户端](https://github.com/songquanpeng/personal-assistant)，[接入文档](./docs/API.md#websocket-客户端)），
    + Telegram 机器人，
    + Discord 群机器人，
-   + 群组消息，可以将多个推送通道组合成一个群组，然后向群组发送消息，可以实现一次性推送到多个渠道的功能。
+   + 腾讯云自定义告警：免费的短信提醒，
+   + 群组消息：可以将多个推送通道组合成一个群组，然后向群组发送消息，可以实现一次性推送到多个渠道的功能，
    + 自定义消息，可以自定义消息请求 URL 和请求体格式，实现与其他服务的对接，支持[众多第三方服务](https://iamazing.cn/page/message-pusher-common-custom-templates)。
-2. 支持在 Web 端编辑 & 管理发送的消息，支持自动刷新。
-3. 支持异步消息。
-4. 多种用户登录注册方式：
+2. 支持**自定义 Webhook，反向适配各种调用平台**，你可以接入各种已有的系统，而无需修改其代码。
+3. 支持在 Web 端编辑 & 管理发送的消息，新消息发送后 Web 端立刻自动刷新。
+4. 支持异步消息。
+5. 多种用户登录注册方式：
    + 邮箱登录注册以及通过邮箱进行密码重置。
    + [GitHub 开放授权](https://github.com/settings/applications/new)。
    + 微信公众号授权（需要额外部署 [WeChat Server](https://github.com/songquanpeng/wechat-server)）。
-5. 支持 Markdown。
-6. 支持用户管理。
-7. Cloudflare Turnstile 用户校验。
-8. 支持在线发布公告，设置关于界面以及页脚。
-9. API 兼容其他消息推送服务，例如 [Server 酱](https://sct.ftqq.com/)。
+6. 支持 Markdown。
+7. 支持用户管理。
+8. Cloudflare Turnstile 用户校验。
+9. 支持在线发布公告，设置关于界面以及页脚。
+10. API 兼容其他消息推送服务，例如 [Server 酱](https://sct.ftqq.com/)。
 
 ## 用途
 1. [整合进自己的博客系统，每当有人登录时发微信消息提醒](https://github.com/songquanpeng/blog/blob/486d63e96ef7906a6c767653a20ec2d3278e9a4a/routes/user.js#L27)。
@@ -79,11 +81,55 @@ _✨ 搭建专属于你的消息推送服务，支持多种消息推送方式，
 4. 为[其他系统](https://github.com/songquanpeng/personal-assistant#个人助理应用)提供消息推送功能。
 
 ## 部署
+### 通过 Docker 部署
+部署：`docker run -d --restart always --name message-pusher -p 3000:3000 -e TZ=Asia/Shanghai -v /home/ubuntu/data/message-pusher:/data justsong/message-pusher`
+
+更新：`docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower -cR`
+
+开放的端口号为 3000，之后用 Nginx 配置域名，反代以及 SSL 证书即可，具体参考[详细部署教程](https://iamazing.cn/page/how-to-deploy-a-website)。
+
+数据将会保存在宿主机的 `/home/ubuntu/data/message-pusher` 目录（只有一个 SQLite 数据库文件），请确保该目录存在且具有写入权限，或者更改为合适的目录。
+
+Nginx 的参考配置：
+```
+server{
+   server_name msgpusher.com;  # 请根据实际情况修改你的域名
+   
+   location / {
+          client_max_body_size  64m;
+          proxy_http_version 1.1;
+          proxy_pass http://localhost:3000;  # 请根据实际情况修改你的端口
+          proxy_set_header Host $host;
+          proxy_set_header X-Forwarded-For $remote_addr;
+          proxy_cache_bypass $http_upgrade;
+          proxy_set_header Accept-Encoding gzip;
+          proxy_buffering off;  # 重要：关闭代理缓冲
+   }
+}
+```
+
+注意，为了 SSE 正常工作，需要关闭 Nginx 的代理缓冲。
+
+之后使用 Let's Encrypt 的 certbot 配置 HTTPS：
+```bash
+# Ubuntu 安装 certbot：
+sudo snap install --classic certbot
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
+# 生成证书 & 修改 Nginx 配置
+sudo certbot --nginx
+# 根据指示进行操作
+# 重启 Nginx
+sudo service nginx restart
+```
+
 ### 手动部署
 1. 从 [GitHub Releases](https://github.com/songquanpeng/message-pusher/releases/latest) 下载可执行文件或者从源码编译：
    ```shell
    git clone https://github.com/songquanpeng/message-pusher.git
-   cd message-pusher
+   cd message-pusher/web
+   npm install
+   npm run build
+   cd ..
    go mod download
    go build -ldflags "-s -w" -o message-pusher
    ````
@@ -95,16 +141,6 @@ _✨ 搭建专属于你的消息推送服务，支持多种消息推送方式，
 3. 访问 [http://localhost:3000/](http://localhost:3000/) 并登录。初始账号用户名为 `root`，密码为 `123456`。
 
 如果服务需要长久运行，只是单纯地启动是不够的，[详细部署教程](https://iamazing.cn/page/how-to-deploy-a-website)。
-
-### 通过 Docker 部署
-部署：`docker run -d --restart always --name message-pusher -p 3000:3000 -e TZ=Asia/Shanghai -v /home/ubuntu/data/message-pusher:/data justsong/message-pusher`
-
-更新：`docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower -cR`
-
-开放的端口号为 3000，之后用 Nginx 配置域名，反代以及 SSL 证书即可，具体参考[详细部署教程](https://iamazing.cn/page/how-to-deploy-a-website)。
-
-数据将会保存在宿主机的 `/home/ubuntu/data/message-pusher` 目录（只有一个 SQLite 数据库文件）。
-
 
 ### 注意
 如果需要使用 WebSocket 客户端推送功能，则 Nginx 的配置文件中 `proxy_read_timeout` 和 `proxy_send_timeout` 务必设置超过 1 分钟。
@@ -179,7 +215,8 @@ proxy_send_timeout 300s;
       12. `one_api`：通过 OneAPI 协议推送消息到 QQ。
       13. `group`：通过预先配置的消息推送通道群组进行推送。
       14. `custom`：通过预先配置好的自定义推送通道进行推送。
-      15. `none`：仅保存到数据库，不做推送。
+      15. `tencent_alarm`：通过腾讯云监控告警进行推送，仅支持 `description` 字段。
+      16. `none`：仅保存到数据库，不做推送。
    5. `token`：如果你在后台设置了推送 token，则此项必填。另外可以通过设置 HTTP `Authorization` 头部设置此项。
    6. `url`：选填，如果不填则系统自动为消息生成 URL，其内容为消息详情。
    7. `to`：选填，推送给指定用户，如果不填则默认推送给自己，受限于具体的消息推送方式，有些推送方式不支持此项。
@@ -192,19 +229,20 @@ proxy_send_timeout 300s;
 
 **各种通道的支持程度：**
 
-|    通道类型    | `title` | `description` | `content` | `url` | `to` | Markdown 支持 |
-|:----------:|:-------:|:-------------:|:---------:|:-----:|:----:|:-----------:|
-|  `email`   |    ✅    |       ✅       |     ✅     |   ❌   |  ✅️  |     ✅️      |
-|   `test`   |    ✅    |       ✅       |     ✅     |  ✅️   |  ✅️  |      ✅      |
-| `corp_app` |    ✅    |       ✅       |     ✅     |  ✅️   |  ✅   |      ✅      |
-|   `corp`   |    ❌    |       ✅       |     ✅     |  ✅️   |  ✅️  |      ✅      |
-|   `lark`   |    ❌    |       ✅       |     ✅     |   ❌   |  ✅   |      ✅      |
-| `lark_app` |    ❌    |       ✅       |     ✅     |  ❌️   |  ✅   |      ✅      |
-|   `ding`   |    ✅    |       ✅       |     ✅     |  ✅️   |  ✅   |      ✅      |
-|   `bark`   |    ✅    |       ✅       |     ✅     |  ✅️   |  ❌   |      ✅      |
-|  `client`  |    ✅    |       ✅       |     ❌     |   ❌   |  ❌   |      ❌      |
-| `telegram` |    ❌    |       ❌       |     ✅     |   ❌   |  ✅   |      ✅      |
-| `discord`  |    ❌    |       ❌       |     ✅     |   ❌   |  ✅   |      ❌      |
+|      通道类型       | `title` | `description` | `content` | `url` | `to` | Markdown 支持 |
+|:---------------:|:-------:|:-------------:|:---------:|:-----:|:----:|:-----------:|
+|     `email`     |    ✅    |       ✅       |     ✅     |   ❌   |  ✅️  |     ✅️      |
+|     `test`      |    ✅    |       ✅       |     ✅     |  ✅️   |  ✅️  |      ✅      |
+|   `corp_app`    |    ✅    |       ✅       |     ✅     |  ✅️   |  ✅   |      ✅      |
+|     `corp`      |    ❌    |       ✅       |     ✅     |  ✅️   |  ✅️  |      ✅      |
+|     `lark`      |    ❌    |       ✅       |     ✅     |   ❌   |  ✅   |      ✅      |
+|   `lark_app`    |    ❌    |       ✅       |     ✅     |  ❌️   |  ✅   |      ✅      |
+|     `ding`      |    ✅    |       ✅       |     ✅     |  ✅️   |  ✅   |      ✅      |
+|     `bark`      |    ✅    |       ✅       |     ✅     |  ✅️   |  ❌   |      ✅      |
+|    `client`     |    ✅    |       ✅       |     ❌     |   ❌   |  ❌   |      ❌      |
+|   `telegram`    |    ❌    |       ❌       |     ✅     |   ❌   |  ✅   |      ✅      |
+|    `discord`    |    ❌    |       ❌       |     ✅     |   ❌   |  ✅   |      ❌      |
+| `tencent_alarm` |    ❌    |       ✅       |     ❌     |   ❌   |  ❌   |      ❌      |
 
 注意：
 1. 对于大部分通道，`description` 字段和 `content` 是不能同时存在的，如果你只需要文字消息，请使用 `description` 字段，如果你需要发送 Markdown 消息，请使用 `content` 字段。
